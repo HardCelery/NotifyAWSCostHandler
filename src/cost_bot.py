@@ -2,7 +2,7 @@ import os
 import json
 import boto3
 import requests
-from datetime import datetime
+from datetime import datetime, timedelta
 
 # グローバル初期化（コールドスタート対策）
 region = os.environ.get("AWS_REGION", "ap-northeast-1")
@@ -62,6 +62,7 @@ def build_invoice_message(billing_month: str, total: float, breakdown: list[tupl
         f"",
         f"【合計金額】",
         f"${total:.2f}"
+        f"",
         f"【前月差額】",
         f"{diff_line}"
     ]
@@ -98,7 +99,7 @@ def lambda_handler(event, context):
         end_date = today.strftime("%Y-%m-%d")
         billing_month = today.strftime("%Y年%m月分")
         # 先月
-        first_of_month = now.replace(day=1)
+        first_of_month = today.replace(day=1)
         last_day_prev_month = first_of_month - timedelta(days=1)
         start_prev = last_day_prev_month.replace(day=1).strftime("%Y-%m-%d")
         end_prev = last_day_prev_month.strftime("%Y-%m-%d")
