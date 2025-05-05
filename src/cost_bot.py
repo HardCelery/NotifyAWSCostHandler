@@ -9,43 +9,8 @@ region = os.environ.get("AWS_REGION", "ap-northeast-1")
 secret_name = os.environ.get("SECRET_NAME", "linebot/credentials")
 
 secrets_client = boto3.client('secretsmanager', region_name=region)
-secret = secrets_client.get_secret_value(SecretId=secret_name)
-secret_dict = json.loads(secret['SecretString'])
+secret_dict = json.loads(secrets_client.get_secret_value(SecretId=secret_name)['SecretString'])
 LINE_ACCESS_TOKEN = secret_dict['LINE_ACCESS_TOKEN']
-
-# ───────────────────────────────────
-# 請求書風メッセージを作成する関数
-# ───────────────────────────────────
-def build_invoice_message(billing_month: str, total: float, breakdown: list[tuple[str, float]]) -> str:
-    """
-    請求書スタイルでメッセージを組み立て（セパレータ幅は固定）
-    """
-    fixed_width = 13  # 固定幅
-
-    sep = "─" * fixed_width
-    header = [
-        f"【請求期間】",
-        f"{billing_month}",
-        f"",
-        f"【合計金額】",
-        f"${total:.2f}"
-    ]
-
-    lines = []
-    for name, amt in breakdown:
-        short_name = SERVICE_NAME_MAP.get(name, name)
-        lines.append(f"  ・{short_name:<5} : $ {amt:>0.2f}")
-
-    parts = [sep]
-    parts.append("AWS利用料請求書".center(fixed_width))
-    parts.append(sep)
-    parts += header
-    parts.append(sep)
-    parts.append("【内訳】")
-    parts += lines
-    parts.append(sep)
-
-    return "\n".join(parts)
 
 # サービス名の略称
 SERVICE_NAME_MAP = {
@@ -78,6 +43,44 @@ SERVICE_NAME_MAP = {
     # 必要に応じてここに追加していく
 }
 
+# ───────────────────────────────────
+# 請求書風メッセージを作成する関数
+# ───────────────────────────────────
+def build_invoice_message(billing_month: str, total: float, breakdown: list[tuple[str, float]], diff: float) -> str:
+    """
+    請求書スタイルでメッセージを組み立て（セパレータ幅は固定）
+    """
+    fixed_width = 13  # 固定幅
+
+    sep = "─" * fixed_width
+    # 差額符号を付与
+    diff_line = f"{'+' if diff >= 0 else '-'}${abs(diff):.2f}"
+
+    header = [
+        f"【請求期間】",
+        f"{billing_month}",
+        f"",
+        f"【合計金額】",
+        f"${total:.2f}"
+        f"【前月差額】",
+        f"{diff_line}"
+    ]
+
+    lines = []
+    for name, amt in breakdown:
+        short_name = SERVICE_NAME_MAP.get(name, name)
+        lines.append(f"  ・{short_name:<5} : $ {amt:>0.2f}")
+
+    parts = [sep]
+    parts.append("AWS利用料請求書".center(fixed_width))
+    parts.append(sep)
+    parts += header
+    parts.append(sep)
+    parts.append("【内訳】")
+    parts += lines
+    parts.append(sep)
+
+    return "\n".join(parts)
 
 # ───────────────────────────────────
 # メインLambdaハンドラー
@@ -88,20 +91,40 @@ def lambda_handler(event, context):
         body = json.loads(event["body"])
         reply_token = body["events"][0]["replyToken"]
 
-        # Cost Explorer API 呼び出し
-        ce = boto3.client("ce", region_name="us-east-1")  # Cost Explorerはus-east-1固定
         today = datetime.today()
+
+        # 当月
         start_date = today.replace(day=1).strftime("%Y-%m-%d")
         end_date = today.strftime("%Y-%m-%d")
         billing_month = today.strftime("%Y年%m月分")
+        # 先月
+        first_of_month = now.replace(day=1)
+        last_day_prev_month = first_of_month - timedelta(days=1)
+        start_prev = last_day_prev_month.replace(day=1).strftime("%Y-%m-%d")
+        end_prev = last_day_prev_month.strftime("%Y-%m-%d")
+        
 
-        # 合計コスト取得
+         # Cost Explorer API 呼び出し
+        ce = boto3.client("ce", region_name="us-east-1")  # Cost Explorerはus-east-1固定
+        
+        # 当月コスト取得
         total_cost_data = ce.get_cost_and_usage(
             TimePeriod={"Start": start_date, "End": end_date},
             Granularity="MONTHLY",
             Metrics=["BlendedCost"]
         )
         amount = float(total_cost_data["ResultsByTime"][0]["Total"]["BlendedCost"]["Amount"])
+
+        # 先月コスト取得
+        prev_cost_data = ce.get_cost_and_usage(
+            TimePeriod={"Start": start_prev, "End": end_prev},
+            Granularity="MONTHLY",
+            Metrics=["BlendedCost"]
+        )
+        prev_amount = float(prev_cost_data["ResultsByTime"][0]["Total"]["BlendedCost"]["Amount"])
+
+        # 差額を計算
+        diff = amount - prev_amount
 
         # サービス別内訳取得
         service_cost_data = ce.get_cost_and_usage(
@@ -116,7 +139,7 @@ def lambda_handler(event, context):
         )[:5]  # 上位5サービスだけ抽出
 
         # メッセージ組み立て
-        invoice_text = build_invoice_message(billing_month, amount, services)
+        invoice_text = build_invoice_message(billing_month, amount, services, diff)
 
         # LINEへ返信
         headers = {
