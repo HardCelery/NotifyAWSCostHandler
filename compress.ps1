@@ -1,6 +1,9 @@
 
 $SevenZIP = "C:\Program Files\7-zip\7z.exe"
 
+Copy-Item -Path "$PSScriptRoot\src\*.py" ".env\Lib\site-packages"
+
+
 # 圧縮対象フォルダ指定
 $Source = Join-Path $PSScriptRoot ".env\Lib\site-packages"
 
