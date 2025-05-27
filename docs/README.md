@@ -1,10 +1,10 @@
-### ✨ 目的
+## ✨ 目的
 
 ユーザーがLINE Botにメッセージを送ると、LambdaがAWS Cost Explorer APIを使用して**AWSのコスト**を取得し、請求書風のメッセージとしてLINEへ返信します。サーバーレス設計によりコスト効率が高く、**イベント駆動型で課金最小化**を実現しています。
 
 ---
 
-### ⛏️ 構成概要
+## ⛏️ 構成概要
 
 1. ユーザーがLINE Botにメッセージを送信
 2. LINEはMessagin APIを通じて、Webhook URLにデータ（JSON）をPOST
@@ -16,7 +16,7 @@
 
 ---
 
-### 🛠️ 技術スタック
+## 🛠️ 技術スタック
 
 | 項目           | 内容                                                |
 | -------------- | --------------------------------------------------- |
@@ -27,9 +27,75 @@
 
 ---
 
-### 🏠 実装内容
+## AWSサービス
+・AWS Lambda
+関数名：NotifyAwsCostHandler
 
-#### 1. Secrets Managerからトークン取得（グローバル初期化）
+・API Gateway
+名前：LineBotWebhookAPI
+
+
+## 👷ロールとポリシー
+| ロール | ポリシー | タイプ |
+| ------ | ------- | ----- |
+| NotifyAwsCostLambdaPolicy | AWSLambdaBasicExecutionRole-... | カスタマー管理 |
+|                           | NotifyAwsCostLambdapolicy | カスタマーインライン |
+
+
+## ポリシー
+・AWSLambdaBasicExecutionRole-...
+```json
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Effect": "Allow",
+            "Action": "logs:CreateLogGroup",
+            "Resource": "arn:aws:logs:ap-northeast-1:358353272915:*"
+        },
+        {
+            "Effect": "Allow",
+            "Action": [
+                "logs:CreateLogStream",
+                "logs:PutLogEvents"
+            ],
+            "Resource": [
+                "arn:aws:logs:ap-northeast-1:358353272915:log-group:/aws/lambda/NotifyAwsCostHandler:*"
+            ]
+        }
+    ]
+}
+```
+
+<br>
+
+・NotifyAwsCostLambdaPolicy
+```json
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Sid": "AllowReadCostAndUsage",
+            "Effect": "Allow",
+            "Action": "ce:GetCostAndUsage",
+            "Resource": "*"
+        },
+        {
+            "Sid": "AllowReadcredentials",
+            "Effect": "Allow",
+            "Action": "secretsmanager:GetSecretValue",
+            "Resource": "arn:aws:secretsmanager:ap-northeast-1:358353272915:secret:linebot/credentials-*"
+        }
+    ]
+}
+```
+
+
+---
+
+## 🏠 実装内容
+
+### 1. Secrets Managerからトークン取得（グローバル初期化）
 
 ```python
 region = os.environ.get("AWS_REGION", "ap-northeast-1")
@@ -110,7 +176,7 @@ SERVICE_NAME_MAP = {
 
 ---
 
-#### 3. 【メインLambdaハンドラー】Webhookリクエスト受信とreplyToken抽出
+### 3. 【メインLambdaハンドラー】Webhookリクエスト受信とreplyToken抽出
 
 ```python
 # ───────────────────────────────────
@@ -185,6 +251,10 @@ def lambda_handler(event, context):
 
 ---
 
+### 今後の課題
+・コードの細分化
+・違うメッセージによって異なる反応をさせる
+
 ### ✅ 修正履歴まとめ
 
 | 日付       | 項目               | 内容                                          |
@@ -195,3 +265,4 @@ def lambda_handler(event, context):
 | 2025/04/30 | `us-east-1` 明示 | Cost Explorerはこのリージョン固定のため明示化 |
 | 2025/04/30 | コード整理 | グローバル変数と関数の明確な分離・簡潔化      |
 | 2025/05/02 | ドキュメント編集 | 技術概要を編集 |
+| 2025/05/27 | ドキュメント編集 | AWSサービスとロール、ポリシー記載 |
