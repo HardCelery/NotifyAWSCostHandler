@@ -1,7 +1,7 @@
 import os
 import json
-import boto3
-import requests
+import boto3 # type: ignore
+import requests # type: ignore
 from datetime import datetime, timedelta
 
 # グローバル初期化（コールドスタート対策）

@@ -1,6 +1,6 @@
 ## ✨ 目的
 
-ユーザーがLINE Botにメッセージを送ると、LambdaがAWS Cost Explorer APIを使用して**AWSのコスト**を取得し、請求書風のメッセージとしてLINEへ返信します。サーバーレス設計によりコスト効率が高く、**イベント駆動型で課金最小化**を実現しています。
+ユーザーがLINE Botにメッセージを送ると、LambdaがAWS Cost Explorer APIを使用して**AWSのコスト**を取得し、請求書風のメッセージとしてLINEへ返信するシステムの開発。サーバーレス設計によりコスト効率が高く、**イベント駆動型で課金最小化**を実現しています。
 
 ---
 
@@ -169,6 +169,7 @@ SERVICE_NAME_MAP = {
     "Amazon Simple DB": "SimpleDB",
     "Amazon CloudTrail": "CloudTrail",
     "Amazon Elastic Kubernetes Service": "EKS",
+    "AWS Identity and Access Management Access Analyzer": "Access Analyzer",
 
     # 必要に応じてここに追加していく
 }
