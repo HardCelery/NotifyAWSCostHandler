@@ -39,6 +39,7 @@ SERVICE_NAME_MAP = {
     "Amazon Simple DB": "SimpleDB",
     "Amazon CloudTrail": "CloudTrail",
     "Amazon Elastic Kubernetes Service": "EKS",
+    "AWS Identity and Access Management Access Analyzer": "Access Analyzer",
 
     # 必要に応じてここに追加していく
 }
