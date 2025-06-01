@@ -1,0 +1,31 @@
+# サービス名の略称
+SERVICE_NAME_MAP = {
+    "Amazon Elastic Compute Cloud - Compute": "EC2",
+    "Amazon Simple Storage Service": "S3",
+    "Amazon Relational Database Service": "RDS",
+    "AWS Lambda": "Lambda",
+    "AWS Cost Explorer": "Cost Explorer",
+    "Amazon CloudWatch": "CloudWatch",
+    "Amazon DynamoDB": "DynamoDB",
+    "Amazon Route 53": "Route53",
+    "Amazon Virtual Private Cloud": "VPC",
+    "Amazon API Gateway": "API Gateway",
+    "Amazon Simple Notification Service": "SNS",
+    "Amazon Simple Queue Service": "SQS",
+    "Amazon Kinesis": "Kinesis",
+    "Amazon CloudFront": "CloudFront",
+    "Amazon Elastic Block Store": "EBS",
+    "Amazon Elastic File System": "EFS",
+    "Amazon Redshift": "Redshift",
+    "Amazon Elastic Load Balancing": "ELB",
+    "Amazon Simple Email Service": "SES",
+    "Amazon Elastic Container Service": "ECS",
+    "Amazon Elastic Container Registry": "ECR",
+    "Amazon Elastic Container Service for Kubernetes": "EKS",
+    "Amazon Simple DB": "SimpleDB",
+    "Amazon CloudTrail": "CloudTrail",
+    "Amazon Elastic Kubernetes Service": "EKS",
+    "AWS Identity and Access Management Access Analyzer": "Access Analyzer",
+
+    # 必要に応じてここに追加していく
+}
